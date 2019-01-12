@@ -1,0 +1,229 @@
+<?hh
+require_once('vendor/autoload.php');
+require_once('vendor/hh_autoload.php');
+
+require_once('model/event.hh');
+require_once('model/guest.hh');
+require_once('model/email.hh');
+require_once('model/transaction.hh');
+
+$event = EventModel::forId($_REQUEST['id']);
+$g = intval($_REQUEST['g']);
+if (!$event) throw new Exception("Unknown event!");
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+  $payee = 0;
+  $payers = Vector {};
+  foreach($_REQUEST['guest_id'] as $key => $guest_id) {
+    $guest_id = intval($_REQUEST['guest_id'][$key]);
+    if (intval($_REQUEST['paid'][$key]) == 1) $payee = $guest_id;
+    if (intval($_REQUEST['divvy'][$key]) == 1) $payers[] = $guest_id;
+  }
+  if ($payee == 0) throw new Exception("No payee");
+  $amount = floatval($_REQUEST['text-amount']);
+  if (count($payers) != 0 && $amount > 0) {
+    TransactionModel::create(
+      $event->id,
+      $_REQUEST['text-description'],
+      $payee,
+      $payers,
+      $amount);
+  }
+}
+
+function guestRow(GuestModel $guest, bool $paid) : :xhp {
+  $paid_shared = "btn button-paid";
+  $paid_enabled = "$paid_shared btn-success";
+  $paid_disabled = "$paid_shared";
+
+  $divvy_shared = "btn divvy-watch col-6 col-md-auto";
+  $divvy_enabled = "$divvy_shared btn-primary";
+  $divvy_disabled = "$divvy_shared";
+
+  return
+    <li class="list-group-item d-flex">
+      <input type="hidden" name="guest_id[]" value={"".$guest->id}/>
+      <input type="hidden" name="paid[]" value={$paid ? '1' : '0'} 
+       class="hidden-paid" id={"hidden-paid-$guest->id"}/>
+      <input type="hidden" name="divvy[]" value="1" id={"hidden-divvy-$guest->id"}
+       class="hidden-divvy"/>
+      <span class="col-auto mr-md-auto">{$guest->name}</span>
+      <div class="btn-group ml-auto ml-md-1">
+        <button type="button" class={$paid ? $paid_enabled : $paid_disabled}
+         id={"button-paid-$guest->id"} onclick={"
+           $('.hidden-paid').val('0');
+           $('.button-paid').attr('class','$paid_disabled');
+           $('#hidden-paid-$guest->id').val('1');
+           $('#button-paid-$guest->id').attr('class','$paid_enabled');
+         "}>
+          Paid
+        </button>
+      </div>
+      <div class="btn-group col-12 d-flex col-md-auto">
+        <button type="button" class={$divvy_enabled} id={"button-divvy-$guest->id"}
+         onclick={"
+          $('#button-exclude-$guest->id').attr('class','$divvy_disabled');
+          $('#hidden-divvy-$guest->id').val('1');
+          $('#button-divvy-$guest->id').attr('class','$divvy_enabled');
+          calculate();
+         "}>
+          Divvy
+        </button>
+        <button type="button" class={$divvy_disabled} id={"button-exclude-$guest->id"}
+         onclick={"
+          $('#button-exclude-$guest->id').attr('class','$divvy_enabled');
+          $('#hidden-divvy-$guest->id').val('0');
+          $('#button-divvy-$guest->id').attr('class','$divvy_disabled');
+          calculate();
+         "}>
+           Exclude
+        </button>
+      </div>
+      <span class="ml-1 h5 display-divvy col-12 col-md-2">$0.00</span>
+    </li>;
+}
+
+$coming_xhp = <ul class="list-group"/>;
+
+foreach($event->guests as $guest) {
+  $coming_xhp->appendChild(guestRow($guest, $guest->id === $event->primary->id));
+}
+
+$guest_xhp = 
+  <li class="list-group-item d-flex bg-secondary text-light">
+    <span class="col">Transaction</span>
+  </li>;
+
+foreach($event->guests as $guest) {
+  $guest_xhp->appendChild(
+    <span class="col">{$guest->name}</span>
+  );
+}
+
+$transaction_list_xhp = 
+  <ul class="list-group">
+    {$guest_xhp}
+  </ul>;
+
+$txs = TransactionModel::forEvent($event->id);
+$tx_totals = Map {};
+foreach($txs as $tx) {
+  $transaction_row_xhp = 
+    <li class="list-group-item d-flex">
+      <span class="col">{$tx->description}</span>
+    </li>;
+  foreach($event->guests as $guest) {
+    $total = 0;
+    if ($tx->payer_ids->linearSearch($guest->id) !== -1) {
+      $total -= $tx->amount;
+    }
+    if ($tx->payee_id === $guest->id) {
+      $total += $tx->amount * count($tx->payer_ids);
+    }
+    $transaction_row_xhp->appendChild(
+      <span class="col">${round($total,2)}</span>
+    );
+    $tx_totals[$guest->id] = $tx_totals->containsKey($guest->id) ?  $tx_totals[$guest->id] + $total : $total;
+  }
+  $transaction_list_xhp->appendChild($transaction_row_xhp);
+}
+
+$totals_row_xhp = 
+  <li class="list-group-item d-flex bg-info text-white">
+    <span class="col">Totals</span>
+  </li>;
+
+function payButton(
+  string $description, 
+  string $id, 
+  string $to, 
+  float $amount) : ?:xhp 
+{
+  return
+    <form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="new">
+      <input type="hidden" name="cmd" value="_xclick"/>
+      <input type="hidden" name="business" value={$to}/>
+      <input type="hidden" name="lc" value="US"/>
+      <input type="hidden" name="item_name" value={$description}/>
+      <input type="hidden" name="item_number" value={$id}/>
+      <input type="hidden" name="amount" value={"".$amount}/>
+      <input type="hidden" name="currency_code" value="USD"/>
+      <input type="hidden" name="button_subtype" value="services"/>
+      <input type="hidden" name="no_note" value="0"/>
+      <input type="hidden" name="bn" value="PP-BuyNowBF:btn_paynow_SM.gif:NonHostedGuest"/>
+      <input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_paynow_SM.gif" border="0" name="submit" alt="PayPal - The safer, easier way to pay online!"/>
+    </form>;
+}
+
+foreach($event->guests as $guest) {
+  $owe = $tx_totals[$guest->id];
+  if ($owe === 0) {
+    $owes = "";
+    $bg = "bg-success";
+    $pay = true;
+  } else if ($owe > 0) {
+    $owes = "Owed ";
+    $bg = "bg-success";
+    $pay = true;
+  } else {
+    $owes = "Owes ";
+    $bg = "bg-danger";
+    $pay = false;
+  }
+  $totals_row_xhp->appendChild(
+    <div class={"col $bg text-white"}>
+      {$owes} ${abs(round($owe,2))}
+      {($tx_totals[$g] < 0 && $pay)
+       ? payButton(
+           $event->title,
+           $event->id,
+           $guest->email,
+           min([$owe, abs($tx_totals[$g])]))
+       : null}</div>
+  );
+}
+$transaction_list_xhp->appendChild($totals_row_xhp);
+
+$transactions_xhp =
+  <div class="card mb-3">
+    <div class="card-header h6">
+      Transactions
+    </div>
+    <div class="card-body">
+      {$transaction_list_xhp}
+    </div>
+  </div>;
+
+print 
+  <html>
+    <head:jstrap>
+      <script src="js/divvy.js"></script>
+      <title>Divvy {$event->title}!</title>
+    </head:jstrap>
+    <body class="container">
+      <div class="card">
+        <div class="card-header">
+          <h5>Divvy up your trip: {$event->title}</h5>
+        </div>
+        <div class="card-body">
+          { count($txs) > 0 ? $transactions_xhp : null }
+          <div class="card bg-info">
+            <div class="card-header h6 text-white">
+              Add an expense
+            </div>
+            <div class="card-body">
+              <form method="post">
+                <input type="hidden" name="id" value={$_REQUEST['id']}/>
+                <input type="text" class="form-control" placeholder="Describe transaction" 
+                 name="text-description" id="text-description" required="1"/>
+                <input type="number" class="form-control" placeholder="Amount to split" 
+                 name="text-amount" id="text-amount" onchange="calculate();" required="1"/>
+                {$coming_xhp}
+                <input type="submit" class="btn btn-primary w-100" value="Divvy!"/>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+      </body>
+  </html>;

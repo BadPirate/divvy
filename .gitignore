@@ -1,0 +1,5 @@
+sendgrid.env
+vendor
+composer.json
+composer.lock
+www.pid
