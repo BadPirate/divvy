@@ -16,7 +16,7 @@ use SendGrid\Mail\From;
 final class MailModel extends SendGrid\Mail\Mail {
   public function __construct(public EventModel $event) {
     parent::__construct(
-      $event->primary->from(),
+      new From('divvy@logichigh.com', 'Divvy'),
       null, // to
       null, // subject
       null, // plain text
