@@ -159,6 +159,7 @@ if (count($txs)) {
   
   foreach($event->guests as $guest) {
     $owe = $tx_totals[$guest->id];
+    $guest_owe = $tx_totals[$g];
     if ($owe === 0) {
       $owes = "";
       $bg = "bg-success";
@@ -174,13 +175,13 @@ if (count($txs)) {
     }
     $totals_row_xhp->appendChild(
       <div class={"col $bg text-white"}>
-        {$owes} ${abs(round($owe,2))}
-        {($tx_totals[$g] < 0 && $pay)
+        {$guest->id.".".$owes} ${abs(round($owe,2))}
+        {($tx_totals[$g] < 0 && $pay && $g !== $guest->id)
         ? payButton(
             $event->title,
             $event->id,
             $guest->email,
-            min([$owe, abs($tx_totals[$g])]))
+            $owe < $guest_owe ? $owe : $guest_owe)
         : null}</div>
     );
   }
