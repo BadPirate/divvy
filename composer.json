@@ -1,0 +1,15 @@
+{
+  "name": "badpirate/divvy",
+  "description": "Divvy up payments!",
+  "require": {
+    "badpirate/hacktack": "dev-master",
+    "sendgrid/smtpapi": "^0.6.1",
+    "sendgrid/sendgrid": "^7.2"
+  },
+  "authors": [
+      {
+          "name": "Kevin Lohman",
+          "email": "badpirate@gmail.com"
+      }
+  ]
+}
