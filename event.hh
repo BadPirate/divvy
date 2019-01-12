@@ -175,7 +175,7 @@ if (count($txs)) {
     }
     $totals_row_xhp->appendChild(
       <div class={"col $bg text-white"}>
-        {$guest->id.".".$owes} ${abs(round($owe,2))}
+        {$owes} ${abs(round($owe,2))}
         {($tx_totals[$g] < 0 && $pay && $g !== $guest->id)
         ? payButton(
             $event->title,

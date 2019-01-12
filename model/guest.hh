@@ -39,7 +39,10 @@ final class GuestModel extends Model {
 
   static public function forEvent(string $event_id) : Vector<GuestModel> {
     $stmt = parent::prepare(
-      'SELECT id, guest_name, email, event_id FROM guests WHERE event_id = ?'
+      'SELECT id, guest_name, email, event_id 
+       FROM guests 
+       WHERE event_id = ?
+       ORDER BY id'
     );
     $stmt->bind_param('s',&$event_id);
     return GuestModel::listFromStmt($stmt);
