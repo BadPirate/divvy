@@ -46,8 +46,6 @@ final class MailModel extends SendGrid\Mail\Mail {
   public function send() {
     $sg = MailModel::sendGrid();
     $response = $sg->send($this);
-    d($response,$this);
-    die();
     switch($response->statusCode()) {
       case 202: break; // success
       default:
