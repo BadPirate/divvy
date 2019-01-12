@@ -4,7 +4,9 @@
   "require": {
     "badpirate/hacktack": "dev-master",
     "sendgrid/smtpapi": "^0.6.1",
-    "sendgrid/sendgrid": "^7.2"
+    "sendgrid/sendgrid": "^7.2",
+    "vlucas/phpdotenv": "^3.1",
+    "kint-php/kint": "^3.1"
   },
   "authors": [
       {

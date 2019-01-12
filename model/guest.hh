@@ -29,6 +29,14 @@ final class GuestModel extends Model {
       $event_id);
   }
 
+  public function from() : SendGrid\Mail\From {
+    return new SendGrid\Mail\From($this->email, $this->name);
+  }
+
+  public function to() : SendGrid\Mail\To {
+    return new SendGrid\Mail\To($this->email, $this->name);
+  }
+
   static public function forEvent(string $event_id) : Vector<GuestModel> {
     $stmt = parent::prepare(
       'SELECT id, guest_name, email, event_id FROM guests WHERE event_id = ?'

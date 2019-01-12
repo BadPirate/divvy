@@ -3,15 +3,32 @@ require_once('vendor/autoload.php');
 require_once('vendor/hh_autoload.php');
 
 require_once('model/event.hh');
+require_once('utils.hh');
 
 enum MailType : int {
   Created = 1;
 } 
 
+use SendGrid\Mail\To;
+use SendGrid\Mail\Personalization;
+use SendGrid\Mail\From;
 
 final class MailModel extends SendGrid\Mail\Mail {
   public function __construct(public EventModel $event) {
-    parent::__construct();
+    parent::__construct(
+      $event->primary->from(),
+      null, // to
+      null, // subject
+      null, // plain text
+      null, // html
+      [ 'title' => $event->title,
+        'site' => getenv('DIVVY_SITE'),
+        'sender' => $event->primary->name,
+        'eventid' => $event->id]);
+    $this->addSubstitution('title',$event->title);
+    $this->addSubstitution('site',getenv('DIVVY_SITE'));
+    $this->addSubstitution('sender',$event->primary->name);
+    $this->addSubstitution('eventid',$event->id);
   }
 
   public function addXHP(:xhp $xhp) {
@@ -21,7 +38,7 @@ final class MailModel extends SendGrid\Mail\Mail {
   static private ?\SendGrid $send_grid;
   static public function sendGrid() : \SendGrid {
     if (!MailModel::$send_grid) {
-      !MailModel::$send_grid = new \SendGrid('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');
+      !MailModel::$send_grid = new \SendGrid(getenv('SENDGRID_API_KEY'));
     }
     return MailModel::$send_grid;
   }
@@ -29,12 +46,20 @@ final class MailModel extends SendGrid\Mail\Mail {
   public function send() {
     $sg = MailModel::sendGrid();
     $response = $sg->send($this);
+    d($response,$this);
+    die();
+    switch($response->statusCode()) {
+      case 202: break; // success
+      default:
+        throw new Exception($response);
+        die();
+    }
   }
 
   public function toAll() {
     $ev = $this->event;
-    foreach($ev->guests as $other) {
-      $this->addTo($other->email, $other->name);
+    foreach($ev->guests as $guest) {
+      $this->addTo($guest->to());
     }
   }
 
@@ -44,21 +69,16 @@ final class MailModel extends SendGrid\Mail\Mail {
         $e = new MailModel($event);
         $primary = $event->primary;
         $e->setFrom($primary->email, $primary->name);
-        $e->setSubject("Divvy up expenses for '$event->title'");
-        $e->toAll();
-        $content = 
-          "$primary->name would like to divvy up expenses for your upcomming trip '$event->title'".
-          " to add expenses or view current details go to ".$event->url();
-        $e->addContent(
-          "text/plain", 
-          $content);
-        $e->addXHP(
-          <div>
-            <h1>Divvy!</h1>
-            <p>{$content}</p>
-            <p><a href={$event->url()}>View {$event->title}</a></p>
-          </div>
-        );
+        $e->setTemplateId('d-4dca1fadb9634247b8ab8ea5fe75edba');
+        $e->setAsm(10432);
+        foreach($event->guests as $guest) {
+          $p = new To(
+            $guest->email,
+            $guest->name,
+            ['guestid' => $guest->id]
+          );
+          $e->addTo($p);
+        }
         $e->send();
         break;
     }

@@ -15,7 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $_REQUEST['email'],
     $_REQUEST['name']);
   MailModel::sendTemplate($e,MailType::Created);
-  HT::redirect("event.hh?id=$e->id");
+  HT::redirect("event.hh?id=$e->id&g=".$e->primary->id);
 }
 
 print

@@ -106,32 +106,6 @@ $transaction_list_xhp =
   </ul>;
 
 $txs = TransactionModel::forEvent($event->id);
-$tx_totals = Map {};
-foreach($txs as $tx) {
-  $transaction_row_xhp = 
-    <li class="list-group-item d-flex">
-      <span class="col">{$tx->description}</span>
-    </li>;
-  foreach($event->guests as $guest) {
-    $total = 0;
-    if ($tx->payer_ids->linearSearch($guest->id) !== -1) {
-      $total -= $tx->amount;
-    }
-    if ($tx->payee_id === $guest->id) {
-      $total += $tx->amount * count($tx->payer_ids);
-    }
-    $transaction_row_xhp->appendChild(
-      <span class="col">${round($total,2)}</span>
-    );
-    $tx_totals[$guest->id] = $tx_totals->containsKey($guest->id) ?  $tx_totals[$guest->id] + $total : $total;
-  }
-  $transaction_list_xhp->appendChild($transaction_row_xhp);
-}
-
-$totals_row_xhp = 
-  <li class="list-group-item d-flex bg-info text-white">
-    <span class="col">Totals</span>
-  </li>;
 
 function payButton(
   string $description, 
@@ -151,48 +125,78 @@ function payButton(
       <input type="hidden" name="button_subtype" value="services"/>
       <input type="hidden" name="no_note" value="0"/>
       <input type="hidden" name="bn" value="PP-BuyNowBF:btn_paynow_SM.gif:NonHostedGuest"/>
-      <input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_paynow_SM.gif" border="0" name="submit" alt="PayPal - The safer, easier way to pay online!"/>
+      <input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_paynow_SM.gif" name="submit" alt="PayPal - The safer, easier way to pay online!"/>
     </form>;
 }
 
-foreach($event->guests as $guest) {
-  $owe = $tx_totals[$guest->id];
-  if ($owe === 0) {
-    $owes = "";
-    $bg = "bg-success";
-    $pay = true;
-  } else if ($owe > 0) {
-    $owes = "Owed ";
-    $bg = "bg-success";
-    $pay = true;
-  } else {
-    $owes = "Owes ";
-    $bg = "bg-danger";
-    $pay = false;
+if (count($txs)) {
+  $tx_totals = Map {};
+  foreach($txs as $tx) {
+    $transaction_row_xhp = 
+      <li class="list-group-item d-flex">
+        <span class="col">{$tx->description}</span>
+      </li>;
+    foreach($event->guests as $guest) {
+      $total = 0;
+      if ($tx->payer_ids->linearSearch($guest->id) !== -1) {
+        $total -= $tx->amount;
+      }
+      if ($tx->payee_id === $guest->id) {
+        $total += $tx->amount * count($tx->payer_ids);
+      }
+      $transaction_row_xhp->appendChild(
+        <span class="col">${round($total,2)}</span>
+      );
+      $tx_totals[$guest->id] = $tx_totals->containsKey($guest->id) ?  $tx_totals[$guest->id] + $total : $total;
+    }
+    $transaction_list_xhp->appendChild($transaction_row_xhp);
   }
-  $totals_row_xhp->appendChild(
-    <div class={"col $bg text-white"}>
-      {$owes} ${abs(round($owe,2))}
-      {($tx_totals[$g] < 0 && $pay)
-       ? payButton(
-           $event->title,
-           $event->id,
-           $guest->email,
-           min([$owe, abs($tx_totals[$g])]))
-       : null}</div>
-  );
-}
-$transaction_list_xhp->appendChild($totals_row_xhp);
 
-$transactions_xhp =
-  <div class="card mb-3">
-    <div class="card-header h6">
-      Transactions
-    </div>
-    <div class="card-body">
-      {$transaction_list_xhp}
-    </div>
-  </div>;
+  $totals_row_xhp = 
+    <li class="list-group-item d-flex bg-info text-white">
+      <span class="col">Totals</span>
+    </li>;
+  
+  foreach($event->guests as $guest) {
+    $owe = $tx_totals[$guest->id];
+    if ($owe === 0) {
+      $owes = "";
+      $bg = "bg-success";
+      $pay = true;
+    } else if ($owe > 0) {
+      $owes = "Owed ";
+      $bg = "bg-success";
+      $pay = true;
+    } else {
+      $owes = "Owes ";
+      $bg = "bg-danger";
+      $pay = false;
+    }
+    $totals_row_xhp->appendChild(
+      <div class={"col $bg text-white"}>
+        {$owes} ${abs(round($owe,2))}
+        {($tx_totals[$g] < 0 && $pay)
+        ? payButton(
+            $event->title,
+            $event->id,
+            $guest->email,
+            min([$owe, abs($tx_totals[$g])]))
+        : null}</div>
+    );
+  }
+  $transaction_list_xhp->appendChild($totals_row_xhp);
+
+  $transactions_xhp =
+    <div class="card mb-3">
+      <div class="card-header h6">
+        Transactions
+      </div>
+      <div class="card-body">
+        {$transaction_list_xhp}
+      </div>
+    </div>;
+}
+
 
 print 
   <html>

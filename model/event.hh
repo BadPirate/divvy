@@ -18,7 +18,7 @@ final class EventModel extends Model {
   }
 
   public function url() : string {
-    return "https://divvy.logichigh.com/event.hh?id=$this->id";
+    return getenv('DIVVY_SITE')."/event.hh?id=$this->id";
   }
 
   static private string $all_params = "id, title";
