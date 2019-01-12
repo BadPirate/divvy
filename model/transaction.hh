@@ -12,12 +12,13 @@ class TransactionModel extends Model {
     public string $description,
     public int $payee_id,
     public Vector<int> $payer_ids,
-    public float $amount
+    public float $amount,
+    public bool $payee_paid
   ) {}
 
   static public function forEvent(string $event_id) : Map <string,TransactionModel> {
     $stmt = parent::prepare(
-      'SELECT transaction, description, payer, payee, amount
+      'SELECT transaction, description, payer, payee, amount, payee_paid
        FROM transactions
        WHERE event_id = ?
        ORDER BY created'
@@ -28,7 +29,8 @@ class TransactionModel extends Model {
     $tx_payer = 0;
     $tx_payee = 0;
     $tx_amount = 0;
-    $stmt->bind_result(&$tx_id, &$tx_description, &$tx_payer, &$tx_payee, &$tx_amount);
+    $payee_paid = 1;
+    $stmt->bind_result(&$tx_id, &$tx_description, &$tx_payer, &$tx_payee, &$tx_amount, &$payee_paid);
     parent::execute($stmt);
     $txs = Map {};
     while($stmt->fetch()) {
@@ -40,9 +42,11 @@ class TransactionModel extends Model {
             $tx_description, 
             $tx_payee, 
             Vector {}, 
-            floatval($tx_amount));
-      $txs[$tx_id] = $tx;
+            floatval($tx_amount),
+            boolval($payee_paid));
+      $tx->amount = $tx_amount > $tx->amount ? $tx_amount : $tx->amount;
       $tx->payer_ids[] = $tx_payer;
+      $txs[$tx_id] = $tx;
     }
     $stmt->close();
     return $txs;
@@ -58,17 +62,19 @@ class TransactionModel extends Model {
   {
     $transaction_id = parent::generateRandomString(10);
     $stmt = parent::prepare(
-      'INSERT INTO transactions (transaction, event_id, description, payee, payer, amount)
-       VALUES (?,?,?,?,?,?)'
+      'INSERT INTO transactions (transaction, event_id, description, payee, payer, amount, payee_paid)
+       VALUES (?,?,?,?,?,?,?)'
     );
     $payer = 0;
-    $stmt->bind_param('sssiii',
+    $payee_paid = $payer_ids->linearSearch($payee_id) !== -1;
+    $stmt->bind_param('sssiiii',
       &$transaction_id,
       &$event_id,
       &$description,
       &$payee_id,
       &$payer,
-      &$amount
+      &$amount,
+      &$payee_paid
     );
     $amount = round($amount / count($payer_ids), 2);
     foreach ($payer_ids as $payer_id) {
@@ -83,6 +89,7 @@ class TransactionModel extends Model {
       $description,
       $payee_id,
       $payer_ids,
-      $amount);
+      $amount / count($payer_ids),
+      $payee_paid);
   }
 }

@@ -12,6 +12,7 @@ $g = intval($_REQUEST['g']);
 if (!$event) throw new Exception("Unknown event!");
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+  d($_REQUEST);
   $payee = 0;
   $payers = Vector {};
   foreach($_REQUEST['guest_id'] as $key => $guest_id) {
@@ -134,7 +135,10 @@ if (count($txs)) {
   foreach($txs as $tx) {
     $transaction_row_xhp = 
       <li class="list-group-item d-flex">
-        <span class="col">{$tx->description}</span>
+        <span class="col">
+          {$tx->description} (${
+            $tx->amount * (count($tx->payer_ids) + ($tx->payee_paid ? 1 : 0))
+          })</span>
       </li>;
     foreach($event->guests as $guest) {
       $total = 0;
@@ -159,30 +163,48 @@ if (count($txs)) {
   
   foreach($event->guests as $guest) {
     $owe = $tx_totals[$guest->id];
-    $guest_owe = $tx_totals[$g];
-    if ($owe === 0) {
+    $owed = $tx_totals[$g];
+    $payed_button = false;
+    $pay = false;
+    $guest_me = $g === $guest->id;
+    if ($owe == 0) {
       $owes = "";
       $bg = "bg-success";
-      $pay = true;
     } else if ($owe > 0) {
       $owes = "Owed ";
       $bg = "bg-success";
       $pay = true;
     } else {
-      $owes = "Owes ";
+      $owes = $guest_me ? "I Owe " : "Owes ";
       $bg = "bg-danger";
-      $pay = false;
+      $payed_button = !$guest_me;
     }
     $totals_row_xhp->appendChild(
       <div class={"col $bg text-white"}>
         {$owes} ${abs(round($owe,2))}
-        {($tx_totals[$g] < 0 && $pay && $g !== $guest->id)
+        {($tx_totals[$g] < 0 && $pay && !$guest_me)
         ? payButton(
             $event->title,
             $event->id,
             $guest->email,
-            $owe < $guest_owe ? $owe : $guest_owe)
-        : null}</div>
+            $owe < abs($owed) ? $owe : abs($owed))
+        : null}
+        {$payed_button
+         ?  <div>
+              <form method="post">
+                <input type="hidden" name="guest_id[]" value={$g}/>
+                <input type="hidden" name="paid[]" value="0"/>
+                <input type="hidden" name="divvy[]" value="1"/>
+                <input type="hidden" name="guest_id[]" value={$guest->id}/>
+                <input type="hidden" name="paid[]" value="1"/>
+                <input type="hidden" name="divvy[]" value="0"/>
+                <input type="hidden" name="text-amount" value={abs($owe)}/>
+                <input type="hidden" name="text-description" value={
+                  "$guest->name paid up"
+                }/>
+                <input class="btn" type="submit" value="Paid me"/>
+              </form>
+            </div> : null}</div>
     );
   }
   $transaction_list_xhp->appendChild($totals_row_xhp);
@@ -198,6 +220,21 @@ if (count($txs)) {
     </div>;
 }
 
+$select_guest_name_xhp = 
+  <select class="custom-select" onchange={"
+    window.location.href='event.hh?id=$event->id&g='+this.value;
+  "}>
+    <option selected="1">Who are you then?</option>
+  </select>;
+
+foreach ($event->guests as $guest) {
+  if ($guest->id === intval($g)) {
+    $me = $guest;
+  }
+  $select_guest_name_xhp->appendChild(
+    <option value={$guest->id}>{$guest->name}</option>
+  );
+}
 
 print 
   <html>
@@ -208,7 +245,20 @@ print
     <body class="container">
       <div class="card">
         <div class="card-header">
-          <h5>Divvy up your trip: {$event->title}</h5>
+          <h5>Hi 
+            <span id="span-name">
+              {$me->name} 
+              <small><a href="javascript:
+                $('#span-name').hide();
+                $('#span-select').show();
+              " class="text-small">(Not {$me->name}?)</a></small>
+            </span>
+            <span id="span-select" class="col-auto mx-3" style="display: none">
+              <br/>
+              {$select_guest_name_xhp}
+            </span>
+            Divvy up your trip: {$event->title}
+          </h5>
         </div>
         <div class="card-body">
           { count($txs) > 0 ? $transactions_xhp : null }
