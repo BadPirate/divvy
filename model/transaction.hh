@@ -16,6 +16,10 @@ class TransactionModel extends Model {
     public bool $payee_paid
   ) {}
 
+  public function total() : float {
+    return $this->amount * (count($this->payer_ids) + ($this->payee_paid ? 1 : 0));
+  }
+  
   static public function forEvent(string $event_id) : Map <string,TransactionModel> {
     $stmt = parent::prepare(
       'SELECT transaction, description, payer, payee, amount, payee_paid

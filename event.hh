@@ -157,22 +157,29 @@ if (count($txs)) {
     $transaction_row_xhp = 
       <li class="list-group-item d-flex">
         <span class="col">
-          {$tx->description} (${
-            $tx->amount * (count($tx->payer_ids) + ($tx->payee_paid ? 1 : 0))
-          })</span>
+          {$tx->description} (${ $tx->total() })</span>
       </li>;
     foreach($event->guests as $guest) {
       $total = 0;
+      $is_payee = $tx->payee_id === $guest->id;
       if ($tx->payer_ids->linearSearch($guest->id) !== -1) {
         $total -= $tx->amount;
       }
-      if ($tx->payee_id === $guest->id) {
-        $total += $tx->amount * count($tx->payer_ids);
+      if ($is_payee) {
+        $total -= $tx->payee_paid ? $tx->amount : 0;
       }
       $transaction_row_xhp->appendChild(
-        <span class="col">${round($total,2)}</span>
+        <span class="col">
+          { $is_payee
+            ? <span class="bg-success text-light" style="display: block;">Paid ${round($tx->total())}</span> : null }
+          <span>${round($total,2)}</span>
+        </span>
       );
-      $tx_totals[$guest->id] = $tx_totals->containsKey($guest->id) ?  $tx_totals[$guest->id] + $total : $total;
+      if ($is_payee) $total += $tx->total();
+      $tx_totals[$guest->id] = 
+        $tx_totals->containsKey($guest->id) 
+        ? $tx_totals[$guest->id] + $total 
+        : $total;
     }
     $transaction_row_xhp->appendChild(
       <form method="post" class="col">
@@ -234,6 +241,7 @@ if (count($txs)) {
             </div> : null}</div>
     );
   }
+  $totals_row_xhp->appendChild(<span class="col"/>);
   $transaction_list_xhp->appendChild($totals_row_xhp);
 
   $transactions_xhp =
