@@ -186,7 +186,7 @@ if (count($txs)) {
     } else {
       $owes = $guest_me ? "I Owe " : "Owes ";
       $bg = "bg-danger";
-      $payed_button = !$guest_me;
+      $payed_button = !$guest_me && $owed > 0;
     }
     $totals_row_xhp->appendChild(
       <div class={"col $bg text-white"}>
