@@ -329,5 +329,8 @@ print
           </div>
         </div>
       </div>
-      </body>
+      <button class="alert alert-info h5 my-3 w-100" onclick="window.location.href='index.hh'">
+        Create a new event to Divvy!
+      </button>
+    </body>
   </html>;

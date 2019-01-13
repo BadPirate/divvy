@@ -66,7 +66,6 @@ final class MailModel extends SendGrid\Mail\Mail {
       case MailType::Created:
         $e = new MailModel($event);
         $primary = $event->primary;
-        $e->setFrom($primary->email, $primary->name);
         $e->setTemplateId('d-4dca1fadb9634247b8ab8ea5fe75edba');
         $e->setAsm(10432);
         foreach($event->guests as $guest) {
