@@ -8,6 +8,15 @@ require_once('model/email.hh');
 require_once('model/transaction.hh');
 
 $event = EventModel::forId($_REQUEST['id']);
+if (!isset($_REQUEST['g'])) {
+  print 
+    <html><head:jstrap><title>Select guest</title></head:jstrap>
+      <body><h5>To see divvy for: '{$event->title}' Select your name.</h5>
+        {selectGuest($event,"Guest Name:")}
+      </body>
+    </html>;
+  die();
+}
 $g = intval($_REQUEST['g']);
 if (!$event) throw new Exception("Unknown event!");
 
@@ -220,21 +229,29 @@ if (count($txs)) {
     </div>;
 }
 
-$select_guest_name_xhp = 
-  <select class="custom-select" onchange={"
-    window.location.href='event.hh?id=$event->id&g='+this.value;
-  "}>
-    <option selected="1">Who are you then?</option>
-  </select>;
-
 foreach ($event->guests as $guest) {
   if ($guest->id === intval($g)) {
     $me = $guest;
   }
-  $select_guest_name_xhp->appendChild(
-    <option value={$guest->id}>{$guest->name}</option>
-  );
 }
+
+function selectGuest(EventModel $event, ?string $prompt="Who are you then?") : :xhp {
+  $select_guest_name_xhp = 
+    <select class="custom-select" onchange={"
+      window.location.href='event.hh?id=$event->id&g='+this.value;
+    "}>
+      <option selected={true}>{$prompt}</option>
+    </select>;
+
+  foreach ($event->guests as $guest) {
+    $select_guest_name_xhp->appendChild(
+      <option value={"".$guest->id}>{$guest->name}</option>
+    );
+  }
+  return $select_guest_name_xhp;
+}
+
+$url = getenv('DIVVY_SITE')."/event.hh?id=$event->id";
 
 print 
   <html>
@@ -243,6 +260,20 @@ print
       <title>Divvy {$event->title}!</title>
     </head:jstrap>
     <body class="container">
+      <div>
+        <button class="alert alert-info h5 w-100" onclick={"
+          var temp = $('<input>');
+          $('body').append(temp);
+          temp.val('$url').select();
+          document.execCommand('copy');
+          temp.remove();
+          $('#span-share').hide();
+          $('#span-copied').show();     
+        "}>
+          <span id="span-share">Share this trip with attendees: {$url}</span>
+          <span id="span-copied" style="display: none;">Copied!</span>
+        </button>
+      </div>
       <div class="card">
         <div class="card-header">
           <h5>Hi 
@@ -255,7 +286,7 @@ print
             </span>
             <span id="span-select" class="col-auto mx-3" style="display: none">
               <br/>
-              {$select_guest_name_xhp}
+              {selectGuest($event)}
             </span>
             Divvy up your trip: {$event->title}
           </h5>
