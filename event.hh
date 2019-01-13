@@ -21,23 +21,33 @@ $g = intval($_REQUEST['g']);
 if (!$event) throw new Exception("Unknown event!");
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-  d($_REQUEST);
-  $payee = 0;
-  $payers = Vector {};
-  foreach($_REQUEST['guest_id'] as $key => $guest_id) {
-    $guest_id = intval($_REQUEST['guest_id'][$key]);
-    if (intval($_REQUEST['paid'][$key]) == 1) $payee = $guest_id;
-    if (intval($_REQUEST['divvy'][$key]) == 1) $payers[] = $guest_id;
-  }
-  if ($payee == 0) throw new Exception("No payee");
-  $amount = floatval($_REQUEST['text-amount']);
-  if (count($payers) != 0 && $amount > 0) {
-    TransactionModel::create(
-      $event->id,
-      $_REQUEST['text-description'],
-      $payee,
-      $payers,
-      $amount);
+  if (isset($_REQUEST['action'])) {
+    switch ($_REQUEST['action']) {
+      case 'Delete':
+        TransactionModel::delete($_REQUEST['tx_id']);
+        break;
+      default: // New transaction
+        throw new Exception("Unhandled action ".$_REQUEST['action']);
+        break;
+    }
+  } else {
+    $payee = 0;
+    $payers = Vector {};
+    foreach($_REQUEST['guest_id'] as $key => $guest_id) {
+      $guest_id = intval($_REQUEST['guest_id'][$key]);
+      if (intval($_REQUEST['paid'][$key]) == 1) $payee = $guest_id;
+      if (intval($_REQUEST['divvy'][$key]) == 1) $payers[] = $guest_id;
+    }
+    if ($payee == 0) throw new Exception("No payee");
+    $amount = floatval($_REQUEST['text-amount']);
+    if (count($payers) != 0 && $amount > 0) {
+      TransactionModel::create(
+        $event->id,
+        $_REQUEST['text-description'],
+        $payee,
+        $payers,
+        $amount);
+    }
   }
 }
 
@@ -110,6 +120,8 @@ foreach($event->guests as $guest) {
   );
 }
 
+$guest_xhp->appendChild(<span class="col"/>); // Button column
+
 $transaction_list_xhp = 
   <ul class="list-group">
     {$guest_xhp}
@@ -162,6 +174,12 @@ if (count($txs)) {
       );
       $tx_totals[$guest->id] = $tx_totals->containsKey($guest->id) ?  $tx_totals[$guest->id] + $total : $total;
     }
+    $transaction_row_xhp->appendChild(
+      <form method="post" class="col">
+        <input type="hidden" name="tx_id" value={$tx->transaction_id}/>
+        <input type="submit" class="btn btn-danger" value="Delete" name="action"/>
+      </form>
+    );
     $transaction_list_xhp->appendChild($transaction_row_xhp);
   }
 

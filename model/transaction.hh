@@ -52,6 +52,14 @@ class TransactionModel extends Model {
     return $txs;
   }
 
+  static public function delete(string $transaction_id) {
+    $stmt = parent::prepare(
+      'DELETE FROM transactions WHERE transaction = ?'
+    );
+    $stmt->bind_param('s',&$transaction_id);
+    parent::ec($stmt);
+  }
+
   static public function create(
     string $event_id,
     string $description,
