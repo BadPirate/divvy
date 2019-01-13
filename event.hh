@@ -56,7 +56,7 @@ function guestRow(GuestModel $guest, bool $paid) : :xhp {
   $paid_enabled = "$paid_shared btn-success";
   $paid_disabled = "$paid_shared";
 
-  $divvy_shared = "btn divvy-watch col-6 col-md-auto";
+  $divvy_shared = "btn divvy-watch col-auto";
   $divvy_enabled = "$divvy_shared btn-primary";
   $divvy_disabled = "$divvy_shared";
 
@@ -67,8 +67,8 @@ function guestRow(GuestModel $guest, bool $paid) : :xhp {
        class="hidden-paid" id={"hidden-paid-$guest->id"}/>
       <input type="hidden" name="divvy[]" value="1" id={"hidden-divvy-$guest->id"}
        class="hidden-divvy"/>
-      <span class="col-auto mr-md-auto">{$guest->name}</span>
-      <div class="btn-group ml-auto ml-md-1">
+      <span class="col-auto mr-auto">{$guest->name}</span>
+      <div class="btn-group ml-1">
         <button type="button" class={$paid ? $paid_enabled : $paid_disabled}
          id={"button-paid-$guest->id"} onclick={"
            $('.hidden-paid').val('0');
@@ -79,7 +79,7 @@ function guestRow(GuestModel $guest, bool $paid) : :xhp {
           Paid
         </button>
       </div>
-      <div class="btn-group col-12 d-flex col-md-auto">
+      <div class="btn-group d-flex col-auto">
         <button type="button" class={$divvy_enabled} id={"button-divvy-$guest->id"}
          onclick={"
           $('#button-exclude-$guest->id').attr('class','$divvy_disabled');
@@ -99,7 +99,7 @@ function guestRow(GuestModel $guest, bool $paid) : :xhp {
            Exclude
         </button>
       </div>
-      <span class="ml-1 h5 display-divvy col-12 col-md-2">$0.00</span>
+      <span class="ml-1 h5 display-divvy col-2">$0.00</span>
     </li>;
 }
 
@@ -273,11 +273,11 @@ $url = getenv('DIVVY_SITE')."/event.hh?id=$event->id";
 
 print 
   <html>
-    <head:jstrap>
+    <head:jstrap reactive={false}>
       <script src="js/divvy.js"></script>
       <title>Divvy {$event->title}!</title>
     </head:jstrap>
-    <body class="container">
+    <body class="container" style="width: 970px !important">
       <div>
         <button class="alert alert-info h5 w-100" onclick={"
           var temp = $('<input>');
