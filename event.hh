@@ -209,6 +209,10 @@ if (count($txs)) {
     $transaction_list_compact_rows->appendChild(
       <tr>
         <td>
+          <form method="post" class="col">
+            <input type="hidden" name="tx_id" value={$tx->transaction_id}/>
+            <input type="submit" class="close btn-danger" value="Delete" name="action"/>
+          </form>
           {count($payer_names) > 1
            ? implode(', ',$payer_names)." split the cost ($".$tx->total().") of $tx->description.  $payee_name paid."
            : "$payee_name paid ".$payer_names[0]." $$tx->amount."}
