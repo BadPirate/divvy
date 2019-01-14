@@ -24,7 +24,7 @@ if (!$event) throw new Exception("Unknown event!");
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   if (isset($_REQUEST['action'])) {
     switch ($_REQUEST['action']) {
-      case 'Delete':
+      case 'X':
         TransactionModel::delete($_REQUEST['tx_id']);
         break;
       case 'Message':
@@ -211,7 +211,7 @@ if (count($txs)) {
         <td>
           <form method="post" class="col">
             <input type="hidden" name="tx_id" value={$tx->transaction_id}/>
-            <input type="submit" class="close btn-danger" value="Delete" name="action"/>
+            <input type="submit" class="btn btn-danger float-right" value="X" name="action"/>
           </form>
           {count($payer_names) > 1
            ? implode(', ',$payer_names)." split the cost ($".$tx->total().") of $tx->description.  $payee_name paid."
@@ -222,7 +222,7 @@ if (count($txs)) {
     $transaction_row_xhp->appendChild(
       <form method="post" class="col">
         <input type="hidden" name="tx_id" value={$tx->transaction_id}/>
-        <input type="submit" class="btn btn-danger" value="Delete" name="action"/>
+        <input type="submit" class="btn btn-danger" value="X" name="action"/>
       </form>
     );
     $transaction_list_xhp->appendChild($transaction_row_xhp);
