@@ -8,6 +8,7 @@ require_once('utils.hh');
 enum MailType : int {
   Created = 1;
   Message = 2;
+  Add     = 3;
 } 
 
 use SendGrid\Mail\To;
@@ -54,27 +55,34 @@ final class MailModel extends SendGrid\Mail\Mail {
     switch($response->statusCode()) {
       case 202: break; // success
       default:
-        throw new Exception($response);
+        d($response,$this);
+        die();
+        throw new Exception("Unhandled code ".$response->statusCode());
         die();
     }
   }
 
   public function toAll() {
     foreach($this->event->guests as $guest) {
-      $p = new To(
-        $guest->email,
-        $guest->name,
-        ['guestid' => $guest->id]
-      );
-      $this->addTo($p);
+      $this->to($guest);
     }
+  }
+
+  public function to(GuestModel $guest) {
+    $p = new To(
+      $guest->email,
+      $guest->name,
+      ['guestid' => $guest->id]
+    );
+    $this->addTo($p);
   }
 
   static public function sendTemplate(
     EventModel $event, 
     MailType $template, 
     ?GuestModel $sender = null,
-    ?string $message = null) 
+    ?string $message = null,
+    ?GuestModel $target = null) 
   {
     switch ($template) {
       case MailType::Created:
@@ -83,7 +91,6 @@ final class MailModel extends SendGrid\Mail\Mail {
         $e->setTemplateId('d-4dca1fadb9634247b8ab8ea5fe75edba');
         $e->setAsm(10432);
         $e->toAll();
-        $e->send();
         break;
       case MailType::Message:
         $e = new MailModel($event,$sender);
@@ -91,8 +98,15 @@ final class MailModel extends SendGrid\Mail\Mail {
         $e->setAsm(10445);
         $e->toAll();
         $e->addSubstitution('message',$message);
-        $e->send();
+        break;
+      case MailType::Add:
+        $e = new MailModel($event,$sender);
+        $e->setTemplateId('d-3ed8d999a9da437b9b5343e27b9528af');
+        $e->setAsm(10432);
+        if (!$target) throw new Exception("Target required");
+        $e->to($target);
         break;
     }
+    $e->send();
   }
 }

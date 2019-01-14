@@ -20,6 +20,8 @@ if (!isset($_REQUEST['g'])) {
 }
 $g = intval($_REQUEST['g']);
 
+$guest_names = [];
+
 foreach ($event->guests as $guest) {
   if ($guest->id === intval($g)) {
     $me = $guest;
@@ -37,6 +39,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       case 'Message':
         MessageModel::create($event->id,$g,$_REQUEST['message']);
         MailModel::sendTemplate($event,MailType::Message,$me,$_REQUEST['message']);
+        break;
+      case 'add-guest':
+        $guest = $event->addGuest($_REQUEST['email'], $_REQUEST['name']);
+        MailModel::sendTemplate($event,MailType::Add,$me,null,$guest);
         break;
       default: // New transaction
         throw new Exception("Unhandled action ".$_REQUEST['action']);
@@ -123,6 +129,7 @@ $coming_xhp = <div/>;
 
 foreach($event->guests as $guest) {
   $coming_xhp->appendChild(guestRow($guest, $guest->id === $event->primary->id));
+  $guest_names[] = $guest->name;
 }
 
 $guest_xhp = 
@@ -345,6 +352,7 @@ foreach(MessageModel::forEvent($event->id) as $message) {
     </tr>
   );
 }
+
 print 
   <html>
     <head:jstrap>
@@ -384,6 +392,25 @@ print
           </h5>
         </div>
         <div class="card-body p-0 pt-3 p-md-3">
+          <div class="alert alert-info p-0 p-md-3">
+            <div class="m-3 m-md-0" id="div-guestlist">
+              Who's in?  {implode(', ',$guest_names)} 
+              <button class="fas fa-user-plus ml-3 btn btn-primary" onclick="
+                $('#div-guestlist').hide();
+                $('#div-addguest').show();
+              "/>
+            </div>
+            <form method="post" class="input-group m-0" id="div-addguest" style="display: none;">
+              <input type="text" name="name" class="form-control" placeholder="Guest Name" required={true}/>
+              <input type="email" name="email" class="form-control" placeholder="Guest Email" required={true}/>
+              <div class="input-group-append">
+                <div class="input-group-text">
+                  <input type="hidden" name="action" value="add-guest"/>
+                  <button type="submit" class="fas fa-user-plus btn btn-primary"/>
+                </div>
+              </div>
+            </form>
+          </div>
           <div class="card mb-3 pb-1">
             <div class="card-header h5">
               Messages

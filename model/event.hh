@@ -21,6 +21,12 @@ final class EventModel extends Model {
     return getenv('DIVVY_SITE')."/event.hh?id=$this->id";
   }
 
+  public function addGuest(string $guest_email, string $guest_name) : GuestModel {
+    $g = GuestModel::create($this->id, $guest_email, $guest_name);
+    $this->guests[] = $g;
+    return $g;
+  }
+
   static private string $all_params = "id, title";
 
   static public function forId(string $id) : ?EventModel {
