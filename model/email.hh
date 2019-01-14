@@ -72,7 +72,8 @@ final class MailModel extends SendGrid\Mail\Mail {
     $p = new To(
       $guest->email,
       $guest->name,
-      ['guestid' => $guest->id]
+      ['guestid' => $guest->id,
+       'guestname' => $guest->name]
     );
     $this->addTo($p);
   }
@@ -86,18 +87,24 @@ final class MailModel extends SendGrid\Mail\Mail {
   {
     switch ($template) {
       case MailType::Created:
-        $e = new MailModel($event);
-        $primary = $event->primary;
-        $e->setTemplateId('d-4dca1fadb9634247b8ab8ea5fe75edba');
-        $e->setAsm(10432);
-        $e->toAll();
+        foreach($event->guests as $guest) {
+          $e = new MailModel($event);
+          $primary = $event->primary;
+          $e->setTemplateId('d-4dca1fadb9634247b8ab8ea5fe75edba');
+          $e->setAsm(10432);
+          $e->to($guest);
+          $e->send();
+        }
         break;
       case MailType::Message:
-        $e = new MailModel($event,$sender);
-        $e->setTemplateId('d-3dbbb3fec2ee47e4a6a638630ac81509');
-        $e->setAsm(10445);
-        $e->toAll();
-        $e->addSubstitution('message',$message);
+        foreach($event->guests as $guest) {
+          $e = new MailModel($event,$sender);
+          $e->setTemplateId('d-3dbbb3fec2ee47e4a6a638630ac81509');
+          $e->setAsm(10445);
+          $e->to($guest);
+          $e->addSubstitution('message',$message);
+          $e->send();
+        }
         break;
       case MailType::Add:
         $e = new MailModel($event,$sender);
@@ -105,8 +112,8 @@ final class MailModel extends SendGrid\Mail\Mail {
         $e->setAsm(10432);
         if (!$target) throw new Exception("Target required");
         $e->to($target);
+        $e->send();
         break;
     }
-    $e->send();
   }
 }
