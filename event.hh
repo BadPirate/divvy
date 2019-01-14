@@ -19,6 +19,13 @@ if (!isset($_REQUEST['g'])) {
   die();
 }
 $g = intval($_REQUEST['g']);
+
+foreach ($event->guests as $guest) {
+  if ($guest->id === intval($g)) {
+    $me = $guest;
+  }
+}
+
 if (!$event) throw new Exception("Unknown event!");
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -29,6 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         break;
       case 'Message':
         MessageModel::create($event->id,$g,$_REQUEST['message']);
+        MailModel::sendTemplate($event,MailType::Message,$me,$_REQUEST['message']);
         break;
       default: // New transaction
         throw new Exception("Unhandled action ".$_REQUEST['action']);
@@ -308,12 +316,6 @@ if (count($txs)) {
         {$transaction_list_compact_summary_xhp}
       </div>
     </div>;
-}
-
-foreach ($event->guests as $guest) {
-  if ($guest->id === intval($g)) {
-    $me = $guest;
-  }
 }
 
 function selectGuest(EventModel $event, ?string $prompt="Who are you then?") : :xhp {
