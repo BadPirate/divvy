@@ -6,6 +6,7 @@ require_once('model/event.hh');
 require_once('model/guest.hh');
 require_once('model/email.hh');
 require_once('model/transaction.hh');
+require_once('model/message.hh');
 
 $event = EventModel::forId($_REQUEST['id']);
 if (!isset($_REQUEST['g'])) {
@@ -25,6 +26,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     switch ($_REQUEST['action']) {
       case 'Delete':
         TransactionModel::delete($_REQUEST['tx_id']);
+        break;
+      case 'Message':
+        MessageModel::create($event->id,$g,$_REQUEST['message']);
         break;
       default: // New transaction
         throw new Exception("Unhandled action ".$_REQUEST['action']);
@@ -326,6 +330,15 @@ function selectGuest(EventModel $event, ?string $prompt="Who are you then?") : :
 
 $url = getenv('DIVVY_SITE')."/event.hh?id=$event->id";
 
+$messages_xhp = <tbody/>;
+
+foreach(MessageModel::forEvent($event->id) as $message) {
+  $messages_xhp->appendChild(
+    <tr>
+      <td><span>{"$message->sender_name: $message->message"}</span></td>
+    </tr>
+  );
+}
 print 
   <html>
     <head:jstrap>
@@ -365,6 +378,23 @@ print
           </h5>
         </div>
         <div class="card-body p-0 pt-3 p-md-3">
+          <div class="card mb-3 pb-1">
+            <div class="card-header h5">
+              Messages
+            </div>
+            <div class="card-body px-0 px-md-3 pb-0">
+              <table class="table table-striped m-0">
+                {$messages_xhp}
+              </table>
+              <form method="post" class="input-group">
+                <input type="text" required={true} placeholder="Send a message to group" 
+                 name="message" class="form-control"/>
+                <div class="input-group-append">
+                  <input type="submit" value="Message" name="action"/>
+                </div>
+              </form>
+            </div>
+          </div>
           { count($txs) > 0 ? $transactions_xhp : null }
           <div class="card bg-info">
             <div class="card-header h6 text-white">
