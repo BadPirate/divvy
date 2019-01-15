@@ -8,6 +8,7 @@ use Badpirate\HackTack\Model;
 
 final class EventModel extends Model {
   public GuestModel $primary;
+  public ?GuestModel $current;
   public function __construct(
     public string $id,
     public string $title,

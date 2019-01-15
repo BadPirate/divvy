@@ -50,12 +50,16 @@ final class MailModel extends SendGrid\Mail\Mail {
   }
 
   public function send() {
+    MailModel::sendCheck($this);
+  }
+  
+  static public function sendCheck($mail) {
     $sg = MailModel::sendGrid();
-    $response = $sg->send($this);
+    $response = $sg->send($mail);
     switch($response->statusCode()) {
       case 202: break; // success
       default:
-        d($response,$this);
+        d($response,$mail);
         die();
         throw new Exception("Unhandled code ".$response->statusCode());
         die();
@@ -76,6 +80,31 @@ final class MailModel extends SendGrid\Mail\Mail {
        'guestname' => $guest->name]
     );
     $this->addTo($p);
+  }
+
+  static public function sendGeneric(
+    string $to_email,
+    string $to_name,
+    string $subject,
+    string $message,
+    string $cta,
+    string $cta_url
+  ) {
+    $mail = new SendGrid\Mail\Mail(
+      new From('divvy@logichigh.com', 'Divvy'),
+      new To($to_email, $to_name),
+      $subject,
+      null, // plain text
+      null, // html
+      [ 'message' => $message,
+        'site' => getenv('DIVVY_SITE'),
+        'cta' => $cta,
+        'ctaurl' => $cta_url,
+        'subject' => $subject]
+    );
+    $mail->setTemplateId('d-4435b22427ce4395a6b3095d81ad88c5');
+    MailModel::sendCheck($mail);
+    d($mail);
   }
 
   static public function sendTemplate(

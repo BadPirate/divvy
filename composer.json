@@ -6,7 +6,8 @@
     "sendgrid/smtpapi": "^0.6.1",
     "sendgrid/sendgrid": "^7.2",
     "vlucas/phpdotenv": "^3.1",
-    "kint-php/kint": "^3.1"
+    "kint-php/kint": "^3.1",
+    "josantonius/session": "^1.1"
   },
   "authors": [
       {

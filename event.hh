@@ -1,6 +1,7 @@
 <?hh
 require_once('vendor/autoload.php');
 require_once('vendor/hh_autoload.php');
+require_once('template.hh');
 
 require_once('model/event.hh');
 require_once('model/guest.hh');
@@ -25,6 +26,7 @@ $guest_names = [];
 foreach ($event->guests as $guest) {
   if ($guest->id === intval($g)) {
     $me = $guest;
+    $event->current = $guest;
   }
 }
 
@@ -359,7 +361,8 @@ print
       <script src="js/divvy.js"></script>
       <title>Divvy {$event->title}!</title>
     </head:jstrap>
-    <body class="container">
+    <body>
+      <divvy:nav event={$event}/>
       <div>
         <button class="alert alert-info h5 w-100" onclick={"
           var temp = $('<input>');
@@ -374,77 +377,57 @@ print
           <span id="span-copied" style="display: none;">Copied!</span>
         </button>
       </div>
-      <div class="card">
-        <div class="card-header">
-          <h5>Hi 
-            <span id="span-name">
-              {$me->name} 
-              <small><a href="javascript:
-                $('#span-name').hide();
-                $('#span-select').show();
-              " class="text-small">(Not {$me->name}?)</a></small>
-            </span>
-            <span id="span-select" class="col-auto mx-3" style="display: none">
-              <br/>
-              {selectGuest($event)}
-            </span>
-            Divvy up your trip: {$event->title}
-          </h5>
+      <div class="alert alert-info p-0 p-md-3">
+        <div class="m-3 m-md-0" id="div-guestlist">
+          Who's in?  {implode(', ',$guest_names)} 
+          <button class="fas fa-user-plus ml-3 btn btn-primary" onclick="
+            $('#div-guestlist').hide();
+            $('#div-addguest').show();
+          "/>
+        </div>
+        <form method="post" class="input-group m-0" id="div-addguest" style="display: none;">
+          <input type="text" name="name" class="form-control" placeholder="Guest Name" required={true}/>
+          <input type="email" name="email" class="form-control" placeholder="Guest Email" required={true}/>
+          <div class="input-group-append">
+            <div class="input-group-text">
+              <input type="hidden" name="action" value="add-guest"/>
+              <button type="submit" class="fas fa-user-plus btn btn-primary"/>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="card mb-3 pb-1">
+        <div class="card-header h5">
+          Messages
+        </div>
+        <div class="card-body px-0 px-md-3 pb-0">
+          <table class="table table-striped m-0">
+            {$messages_xhp}
+          </table>
+          <form method="post" class="input-group">
+            <input type="text" required={true} placeholder="Send a message to group" 
+              name="message" class="form-control"/>
+            <div class="input-group-append">
+              <input type="submit" value="Message" name="action"/>
+            </div>
+          </form>
+        </div>
+      </div>
+      { count($txs) > 0 ? $transactions_xhp : null }
+      <div class="card bg-info">
+        <div class="card-header h6 text-white">
+          Add an expense
         </div>
         <div class="card-body p-0 pt-3 p-md-3">
-          <div class="alert alert-info p-0 p-md-3">
-            <div class="m-3 m-md-0" id="div-guestlist">
-              Who's in?  {implode(', ',$guest_names)} 
-              <button class="fas fa-user-plus ml-3 btn btn-primary" onclick="
-                $('#div-guestlist').hide();
-                $('#div-addguest').show();
-              "/>
-            </div>
-            <form method="post" class="input-group m-0" id="div-addguest" style="display: none;">
-              <input type="text" name="name" class="form-control" placeholder="Guest Name" required={true}/>
-              <input type="email" name="email" class="form-control" placeholder="Guest Email" required={true}/>
-              <div class="input-group-append">
-                <div class="input-group-text">
-                  <input type="hidden" name="action" value="add-guest"/>
-                  <button type="submit" class="fas fa-user-plus btn btn-primary"/>
-                </div>
-              </div>
-            </form>
-          </div>
-          <div class="card mb-3 pb-1">
-            <div class="card-header h5">
-              Messages
-            </div>
-            <div class="card-body px-0 px-md-3 pb-0">
-              <table class="table table-striped m-0">
-                {$messages_xhp}
-              </table>
-              <form method="post" class="input-group">
-                <input type="text" required={true} placeholder="Send a message to group" 
-                 name="message" class="form-control"/>
-                <div class="input-group-append">
-                  <input type="submit" value="Message" name="action"/>
-                </div>
-              </form>
-            </div>
-          </div>
-          { count($txs) > 0 ? $transactions_xhp : null }
-          <div class="card bg-info">
-            <div class="card-header h6 text-white">
-              Add an expense
-            </div>
-            <div class="card-body p-0 pt-3 p-md-3">
-              <form method="post">
-                <input type="hidden" name="id" value={$_REQUEST['id']}/>
-                <input type="text" class="form-control" placeholder="Describe transaction" 
-                 name="text-description" id="text-description" required="1"/>
-                <input type="number" class="form-control" placeholder="Amount to split" 
-                 name="text-amount" id="text-amount" onchange="calculate();" required="1"/>
-                {$coming_xhp}
-                <input type="submit" class="btn btn-primary w-100" value="Divvy!"/>
-              </form>
-            </div>
-          </div>
+          <form method="post">
+            <input type="hidden" name="id" value={$_REQUEST['id']}/>
+            <input type="text" class="form-control" placeholder="Describe transaction" 
+              name="text-description" id="text-description" required="1"/>
+            <input type="number" class="form-control" placeholder="Amount to split" 
+              name="text-amount" id="text-amount" onchange="calculate();" required="1"/>
+            {$coming_xhp}
+            <input type="submit" class="btn btn-primary w-100" value="Divvy!"/>
+          </form>
         </div>
       </div>
       <button class="alert alert-info h5 my-3 w-100" onclick="window.location.href='index.hh'">

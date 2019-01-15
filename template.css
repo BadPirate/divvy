@@ -1,0 +1,11 @@
+@font-face {
+  font-family: 'village_idiot_bbregular';
+  src: url('font/village-webfont.woff2') format('woff2'),
+       url('font/village-webfont.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+}
+
+.dvhead {
+  font-family: 'village_idiot_bbregular';
+}

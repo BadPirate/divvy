@@ -4,6 +4,7 @@ require_once('vendor/hh_autoload.php');
 
 require_once('model/event.hh');
 require_once('model/email.hh');
+require_once('template.hh');
 
 use Badpirate\HackTack\HT;
 
@@ -20,14 +21,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 print
 <html>
-  <head:jstrap>
+  <head:divvy>
     <title>Divvy!</title>
-  </head:jstrap>
-  <body class="container">
+  </head:divvy>
+  <body>
+    <divvy:nav/>
     <div class="card">
-      <div class="card-header h5">
-        Welcome to Divvy!
-      </div>
       <div class="card-body">
         Divvy is a quick and fair way to split the cost of a trip with your friends.  To get started enter
         a trip name and the email addresses of those on the trip below.
