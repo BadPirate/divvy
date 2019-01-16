@@ -46,6 +46,13 @@ final class UserModel extends Model {
     }
   }
 
+  static public function loginRedirect(string $email, ?string $url = null) {
+    $email = strtolower($email);
+    $current = $url ?? (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+    $current = urlencode($current);
+    HT::redirect("login.hh?action=email&email=$email&r=$current");
+  }
+
   public function setPassword(string $password) {
     $stmt = parent::prepare(
       'UPDATE users SET password = ? WHERE email = ?'
@@ -55,14 +62,14 @@ final class UserModel extends Model {
     parent::ec($stmt);
   }
 
-  static public function logout() {
+  static public function logout(?string $redirect = null) {
     Session::pull('email');
-    HT::redirect('index.hh');
+    HT::redirect($redirect ?? 'index.hh');
   }
 
-  public function login() {
+  public function login(?string $redirect = null) {
     Session::set('email', $this->email);
-    HT::redirect('index.hh');
+    HT::redirect($redirect ? $redirect : 'index.hh');
   }
 
   static public function forEmail(string $email, string $password) : ?UserModel {

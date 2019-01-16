@@ -10,6 +10,7 @@ $email = null;
 $code_sent = false;
 $c = null;
 $error = null;
+$redirect = isset($_REQUEST['r']) ? $_REQUEST['r'] : null;
 if (isset($_REQUEST['c'])) {
   $c = $_REQUEST['c'];
   if($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -24,11 +25,11 @@ if (isset($_REQUEST['c'])) {
         $c = null;
       } else {
         $user->setPassword($password);
-        $user->login();
+        $user->login($redirect);
       }
     }
   }
-} else if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+} else if (isset($_REQUEST['action'])) {
   switch($_REQUEST['action']) {
     case 'email':
       if (UserModel::existsForEmail($_REQUEST['email'])) {
@@ -52,8 +53,7 @@ if (isset($_REQUEST['c'])) {
         $email = $_REQUEST['email'];
         $error = "Invalid login.";
       } else {
-        $user->login();
-        
+        $user->login($redirect);
       }
       break;
     default:
@@ -84,6 +84,7 @@ print
           <form method="post" class="input-group">
             <input type="password" placeholder="Password" name="password" class="form-control" required={true}/>
             <input type="password" placeholder="Verify" name="verify" class="form-control" required={true}/>
+            { $redirect ? <input type="hidden" name="r" value={$redirect}/> : null }
             <input type="hidden" name="c" value={$c}/>
             <span class="input-group-append">
               <input type="submit" class="form-control" value="Set Password"/>
@@ -98,6 +99,7 @@ print
                 $email ?
                 <span class="input-group">
                   <input type="hidden" name="email" value={$email} class="form-control"/>
+                  { $redirect ? <input type="hidden" name="r" value={$redirect}/> : null }
                   <input type="password" name="password" placeholder={"Password for $email"} required={true} 
                   class="form_control"/>
                   <input type="hidden" name="action" value="password"/>
@@ -108,6 +110,7 @@ print
                 :
                 <span class="input-group">
                   <input type="email" placeholder="email" required={true} name="email" class="form-control"/>
+                  { $redirect ? <input type="hidden" name="r" value={$redirect}/> : null }
                   <input type="hidden" name="action" value="email"/>
                   <span class="input-group-append">
                     <input type="submit" class="form-control" value="Login"/>

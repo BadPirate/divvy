@@ -8,6 +8,9 @@ require_once('model/guest.hh');
 require_once('model/email.hh');
 require_once('model/transaction.hh');
 require_once('model/message.hh');
+require_once('model/user.hh');
+
+use Badpirate\HackTack\HT;
 
 $event = EventModel::forId($_REQUEST['id']);
 if (!isset($_REQUEST['g'])) {
@@ -23,7 +26,13 @@ $g = intval($_REQUEST['g']);
 
 $guest_names = [];
 
+$user = UserModel::fromSession();
 foreach ($event->guests as $guest) {
+  if ($user && $user->email === $guest->email) {
+    if ($guest->id !== intval($g)) {
+      HT::redirect("event.hh?id=$event->id&g=$guest->id");
+    }
+  }
   if ($guest->id === intval($g)) {
     $me = $guest;
     $event->current = $guest;
@@ -31,6 +40,14 @@ foreach ($event->guests as $guest) {
 }
 
 if (!$event) throw new Exception("Unknown event!");
+
+if ($user && $me->email !== $user->email) {
+  $user->logout("event.hh?id=$event->id&g=$g");
+}
+
+if (!$user && UserModel::existsForEmail($me->email)) {
+  UserModel::loginRedirect($me->email, "event.hh?id=$event->id&g=$g");
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   if (isset($_REQUEST['action'])) {
@@ -357,10 +374,10 @@ foreach(MessageModel::forEvent($event->id) as $message) {
 
 print 
   <html>
-    <head:jstrap>
+    <head:divvy>
       <script src="js/divvy.js"></script>
       <title>Divvy {$event->title}!</title>
-    </head:jstrap>
+    </head:divvy>
     <body>
       <divvy:nav event={$event}/>
       <div>
