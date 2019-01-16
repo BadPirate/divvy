@@ -51,42 +51,43 @@ if (!$user && UserModel::existsForEmail($me->email)) {
   UserModel::loginRedirect($me->email, "event.hh?id=$event->id&g=$g");
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-  if (isset($_REQUEST['action'])) {
-    switch ($_REQUEST['action']) {
-      case 'X':
-        TransactionModel::delete($_REQUEST['tx_id']);
-        break;
-      case 'Message':
-        MessageModel::create($event->id,$g,$_REQUEST['message']);
-        MailModel::sendTemplate($event,MailType::Message,$me,$_REQUEST['message']);
-        break;
-      case 'add-guest':
-        $guest = $event->addGuest($_REQUEST['email'], $_REQUEST['name']);
-        MailModel::sendTemplate($event,MailType::Add,$me,null,$guest);
-        break;
-      default: // New transaction
-        throw new Exception("Unhandled action ".$_REQUEST['action']);
-        break;
-    }
-  } else {
-    $payee = 0;
-    $payers = Vector {};
-    foreach($_REQUEST['guest_id'] as $key => $guest_id) {
-      $guest_id = intval($_REQUEST['guest_id'][$key]);
-      if (intval($_REQUEST['paid'][$key]) == 1) $payee = $guest_id;
-      if (intval($_REQUEST['divvy'][$key]) == 1) $payers[] = $guest_id;
-    }
-    if ($payee == 0) throw new Exception("No payee");
-    $amount = floatval($_REQUEST['text-amount']);
-    if (count($payers) != 0 && $amount > 0) {
-      TransactionModel::create(
-        $event->id,
-        $_REQUEST['text-description'],
-        $payee,
-        $payers,
-        $amount);
-    }
+if (isset($_REQUEST['action'])) {
+  switch ($_REQUEST['action']) {
+    case 'delete':
+      $event->delete();
+      break;
+    case 'X':
+      TransactionModel::delete($_REQUEST['tx_id']);
+      break;
+    case 'Message':
+      MessageModel::create($event->id,$me->email,$_REQUEST['message']);
+      MailModel::sendTemplate($event,MailType::Message,$me,$_REQUEST['message']);
+      break;
+    case 'add-guest':
+      $guest = $event->addGuest($_REQUEST['email'], $_REQUEST['name']);
+      MailModel::sendTemplate($event,MailType::Add,$me,null,$guest);
+      break;
+    default: // New transaction
+      throw new Exception("Unhandled action ".$_REQUEST['action']);
+      break;
+  }
+} else if($_SERVER['REQUEST_METHOD'] === 'POST') {
+  $payee = 0;
+  $payers = Vector {};
+  foreach($_REQUEST['guest_id'] as $key => $guest_id) {
+    $guest_id = intval($_REQUEST['guest_id'][$key]);
+    if (intval($_REQUEST['paid'][$key]) == 1) $payee = $guest_id;
+    if (intval($_REQUEST['divvy'][$key]) == 1) $payers[] = $guest_id;
+  }
+  if ($payee == 0) throw new Exception("No payee");
+  $amount = floatval($_REQUEST['text-amount']);
+  if (count($payers) != 0 && $amount > 0) {
+    TransactionModel::create(
+      $event->id,
+      $_REQUEST['text-description'],
+      $payee,
+      $payers,
+      $amount);
   }
 }
 
@@ -452,5 +453,11 @@ print
       <button class="alert alert-info h5 my-3 w-100" onclick="window.location.href='index.hh'">
         Create a new event to Divvy!
       </button>
+      <button class="alert alert-danger h5 my-3 w-100" 
+       onclick={"
+        if(confirm('Are you sure, this will delete all the messages and transactions associated with this event as well...')) {
+          window.location.href='event.hh?id=$event->id&g=$g&action=delete';
+        }
+       "}>DELETE Event</button>
     </body>
   </html>;

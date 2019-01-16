@@ -23,7 +23,7 @@ final class MessageModel extends Model
     $stmt = parent::prepare(
       'INSERT INTO messages (event_id, email, message) VALUES (?,?,?)'
     );
-    $stmt->bind_param('sis',&$event_id, &$email, &$message);
+    $stmt->bind_param('sss',&$event_id, &$email, &$message);
     parent::ec($stmt);
   }
 

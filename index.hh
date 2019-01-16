@@ -55,8 +55,14 @@ print
             <div class="input-group">
               <input type="text" name="primary-name" class="form-control col-5" 
                placeholder="Your name" required="true"/>
-              <input type="email" name="primary-email" class="form-control col-6" 
-               placeholder="Your email address" required="true"/>
+              {
+                $user ? 
+                <input type="email" name="primary-email" value={$user->email} readonly={true}
+                 class="form-control col-6 text-gray" />
+                :
+                <input type="email" name="primary-email" class="form-control col-6" 
+                 placeholder="Your email address" required="true"/>
+              }
             </div>
             <div class="input-group" id="other-email-div">
               <div class="input-group addon">

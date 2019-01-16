@@ -5,6 +5,7 @@ require_once('model/model.hh');
 require_once('model/guest.hh');
 
 use Badpirate\HackTack\Model;
+use Badpirate\HackTack\HT;
 
 final class EventModel extends Model {
   public GuestModel $primary;
@@ -51,6 +52,15 @@ final class EventModel extends Model {
     $stmt->bind_param('s',&$email);
     $r = EventModel::listFromStmt($stmt);
     return $r;
+  }
+
+  public function delete() {
+    $stmt = parent::prepare(
+      'DELETE FROM events WHERE id = ?'
+    );
+    $stmt->bind_param('s',&$this->id);
+    parent::ec($stmt);
+    HT::redirect('index.hh');
   }
 
   static public function listFromStmt(mysqli_stmt $stmt) : Vector<EventModel> {
