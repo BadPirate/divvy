@@ -7,23 +7,22 @@ require_once('model/event.hh');
 use Badpirate\HackTack\Model;
 
 final class GuestModel extends Model {
+  public int $id;
   public function __construct(
-    public int $id,
     public string $name,
     public string $email,
     public string $event_id
-  ) {}
+  ) {
+    $this->id = crc32($email);
+  }
 
   static public function create(string $event_id, string $email, string $name) : GuestModel {
     $stmt = parent::prepare(
       'INSERT INTO guests (event_id, email, guest_name) VALUES (?,?,?)'
     );
     $stmt->bind_param('sss',&$event_id, &$email, &$name);
-    parent::execute($stmt);
-    $guest_id = $stmt->insert_id;
-    $stmt->close();
+    parent::ec($stmt);
     return new GuestModel(
-      $guest_id,
       $name,
       $email,
       $event_id);
@@ -39,22 +38,19 @@ final class GuestModel extends Model {
 
   static public function forEvent(string $event_id) : Vector<GuestModel> {
     $stmt = parent::prepare(
-      'SELECT id, guest_name, email, event_id 
+      'SELECT guest_name, email, event_id
        FROM guests 
-       WHERE event_id = ?
-       ORDER BY id'
+       WHERE event_id = ?'
     );
     $stmt->bind_param('s',&$event_id);
     return GuestModel::listFromStmt($stmt);
   }
 
   static public function listFromStmt(mysqli_stmt $stmt) : Vector<GuestModel> {
-    $guest_id = 0;
     $guest_name = null;
     $guest_email = null;
     $event_id = null;
     $stmt->bind_result(
-      &$guest_id,
       &$guest_name,
       &$guest_email,
       &$event_id
@@ -63,7 +59,6 @@ final class GuestModel extends Model {
     $v = Vector {};
     while($stmt->fetch()) {
       $v[] = new GuestModel(
-        $guest_id,
         $guest_name,
         $guest_email,
         $event_id);

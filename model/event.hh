@@ -28,7 +28,7 @@ final class EventModel extends Model {
     return $g;
   }
 
-  static private string $all_params = "id, title";
+  static private string $all_params = "events.id, events.title";
 
   static public function forId(string $id) : ?EventModel {
     $ap = EventModel::$all_params;
@@ -38,6 +38,19 @@ final class EventModel extends Model {
     $stmt->bind_param('s',&$id);
     $r = EventModel::listFromStmt($stmt);
     return count($r) ? $r[0] : null;
+  }
+
+  static public function forEmail(string $email) : Vector<EventModel> {
+    $ap = EventModel::$all_params;
+    $stmt = parent::prepare(
+      "SELECT $ap 
+       FROM events 
+       LEFT JOIN guests ON events.id = guests.event_id
+       WHERE guests.email = ?"
+    );
+    $stmt->bind_param('s',&$email);
+    $r = EventModel::listFromStmt($stmt);
+    return $r;
   }
 
   static public function listFromStmt(mysqli_stmt $stmt) : Vector<EventModel> {

@@ -26,6 +26,7 @@ $g = intval($_REQUEST['g']);
 
 $guest_names = [];
 
+$me = null;
 $user = UserModel::fromSession();
 foreach ($event->guests as $guest) {
   if ($user && $user->email === $guest->email) {
@@ -37,6 +38,10 @@ foreach ($event->guests as $guest) {
     $me = $guest;
     $event->current = $guest;
   }
+}
+
+if (!$me) {
+  HT::redirect("event.hh?id=$event->id");
 }
 
 if (!$event) throw new Exception("Unknown event!");

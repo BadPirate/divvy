@@ -9,43 +9,43 @@ final class MessageModel extends Model
 {
   public function __construct(
     public string $event_id,
-    public int $guest_id,
+    public string $guest_email,
     public string $message,
     public string $sender_name
   ) {}
 
   static public function create(
     string $event_id,
-    int $guest_id,
+    string $email,
     string $message
   )
   {
     $stmt = parent::prepare(
-      'INSERT INTO messages (event_id, guest_id, message) VALUES (?,?,?)'
+      'INSERT INTO messages (event_id, email, message) VALUES (?,?,?)'
     );
-    $stmt->bind_param('sis',&$event_id, &$guest_id, &$message);
+    $stmt->bind_param('sis',&$event_id, &$email, &$message);
     parent::ec($stmt);
   }
 
   static public function forEvent(string $event_id) : Vector<MessageModel> {
     $stmt = parent::prepare(
-      'SELECT messages.guest_id, messages.message, guests.guest_name
+      'SELECT messages.email, messages.message, guests.guest_name
        FROM messages 
-       LEFT JOIN guests ON guests.id = messages.guest_id
+       LEFT JOIN guests ON guests.email = messages.email AND guests.event_id = messages.event_id
        WHERE messages.event_id = ? 
        ORDER BY created'
     );
     $stmt->bind_param('s',&$event_id);
-    $guest_id = 0;
+    $email = '';
     $message = '';
     $name = '';
-    $stmt->bind_result(&$guest_id, &$message, &$name);
+    $stmt->bind_result(&$email, &$message, &$name);
     parent::execute($stmt);
     $result = Vector {};
     while($stmt->fetch()) {
       $result[] = new MessageModel(
         $event_id,
-        $guest_id,
+        $email,
         $message,
         $name);
     }
