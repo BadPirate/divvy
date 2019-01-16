@@ -85,6 +85,9 @@ final class :head:divvy extends :head:jstrap {
     $head->appendChild(
       <link rel="stylesheet" href="template.css" type="text/css"/>
     );
+    $head->appendChild(
+      <link rel="apple-touch-icon" href="img/iphone_icon.gif"/>
+    );
     return $head;
   }
 }
