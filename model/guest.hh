@@ -13,7 +13,7 @@ final class GuestModel extends Model {
     public string $email,
     public string $event_id
   ) {
-    $this->id = crc32($email);
+    $this->id = crc32($email.$event_id);
   }
 
   static public function create(string $event_id, string $email, string $name) : GuestModel {

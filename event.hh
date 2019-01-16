@@ -13,16 +13,7 @@ require_once('model/user.hh');
 use Badpirate\HackTack\HT;
 
 $event = EventModel::forId($_REQUEST['id']);
-if (!isset($_REQUEST['g'])) {
-  print 
-    <html><head:jstrap><title>Select guest</title></head:jstrap>
-      <body><h5>To see divvy for: '{$event->title}' Select your name.</h5>
-        {selectGuest($event,"Guest Name:")}
-      </body>
-    </html>;
-  die();
-}
-$g = intval($_REQUEST['g']);
+$g = isset($_REQUEST['g']) ? intval($_REQUEST['g']) : null;
 
 $guest_names = [];
 
@@ -30,7 +21,7 @@ $me = null;
 $user = UserModel::fromSession();
 foreach ($event->guests as $guest) {
   if ($user && $user->email === $guest->email) {
-    if ($guest->id !== intval($g)) {
+    if (!$g || $guest->id !== $g) {
       HT::redirect("event.hh?id=$event->id&g=$guest->id");
     }
   }
@@ -41,7 +32,13 @@ foreach ($event->guests as $guest) {
 }
 
 if (!$me) {
-  HT::redirect("event.hh?id=$event->id");
+  print 
+    <html><head:jstrap><title>Select guest</title></head:jstrap>
+      <body><h5>To see divvy for: '{$event->title}' Select your name.</h5>
+        {selectGuest($event,"Guest Name:")}
+      </body>
+    </html>;
+  die();
 }
 
 if (!$event) throw new Exception("Unknown event!");

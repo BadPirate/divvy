@@ -1,10 +1,11 @@
 <?hh
 require_once('vendor/autoload.php');
 require_once('vendor/hh_autoload.php');
+require_once('template.hh');
 
 require_once('model/event.hh');
 require_once('model/email.hh');
-require_once('template.hh');
+require_once('model/user.hh');
 
 use Badpirate\HackTack\HT;
 
@@ -18,6 +19,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   MailModel::sendTemplate($e,MailType::Created);
   HT::redirect("event.hh?id=$e->id&g=".$e->primary->id);
 }
+
+$user = UserModel::fromSession();
+$events_list_xhp = null;
+if ($user) {
+  $events = EventModel::forEmail($user->email);
+  if (count($events)) {
+    $events_list_xhp = <table class="table table-striped"/>;
+    foreach($events as $event) {
+      $events_list_xhp->appendChild(
+        <tr><td><a href={"event.hh?id=$event->id"}>{$event->title}</a></td></tr>
+      );
+    }
+  }
+}
+
 
 print
 <html>
@@ -61,5 +77,16 @@ print
         </form>
       </div>
     </div>
+    {
+      $user && $events_list_xhp ?
+      <div class="card">
+        <div class="card-header h5">
+          Events
+        </div>
+        <div class="card-body">
+          {$events_list_xhp}
+        </div>
+      </div> : null
+    }
   </body>
 </html>;
