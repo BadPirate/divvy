@@ -1,4 +1,3 @@
 config.env
 vendor
-composer.lock
 www.pid
